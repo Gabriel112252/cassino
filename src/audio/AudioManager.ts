@@ -16,6 +16,14 @@ export interface PlayOptions {
  * - Música e efeitos têm volumes e mute independentes, persistidos em SettingsStore.
  * - Se algum arquivo falhar ao carregar, o jogo continua (sem som para aquela chave).
  */
+/**
+ * MP3 de 0,2 s de silêncio (489 bytes). Tocado em loop num <audio> HTML5 no primeiro toque:
+ * no iOS isso coloca a página na categoria "playback", e o Web Audio passa a tocar mesmo com a
+ * chave lateral no modo silencioso (técnica do unmute.js). Sem isso, o jogo fica mudo no iPhone
+ * em silencioso, que é o estado mais comum do aparelho.
+ */
+const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//NwwAAAAAAAAAAAAEluZm8AAAAPAAAACgAAAbwAd3d3d3d3d3d3h4eHh4eHh4eHh5aWlpaWlpaWlpalpaWlpaWlpaWltLS0tLS0tLS0tMPDw8PDw8PDw8PS0tLS0tLS0tLS4eHh4eHh4eHh4fDw8PDw8PDw8PD/////////////AAAAAExhdmM2MC4zMQAAAAAAAAAAAAAAACQDBgAAAAAAAAG87PIqcgAAAAAAAAAAAAAAAAD/8xDEAAAAA0gAAAAATEFNRTMuMTAwVVVVVf/zEsQNAAADSAAAAABVVVVVVVVVVVVVVVVVVf/zEMQbAAADSAAAAABVVVVVVVVVVVVVVVVV//MQxCgAAANIAAAAAFVVVVVVVVVVVVVVVVX/8xDENQAAA0gAAAAAVVVVVVVVVVVVVVVVVf/zEMRCAAADSAAAAABVVVVVVVVVVVVVVVVV//MQxE8AAANIAAAAAFVVVVVVVVVVVVVVVVX/8xDEXAAAA0gAAAAAVVVVVVVVVVVVVVVVVf/zEMRpAAADSAAAAABVVVVVVVVVVVVVVVVV//MSxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVV';
+
 export class AudioManager {
   private readonly howls = new Map<string, Howl>();
   private readonly defs = new Map<string, SoundDef>();
@@ -23,10 +31,46 @@ export class AudioManager {
   private unlocked = false;
   private settings: UserSettings;
   private musicRequested = false;
+  private silentTag?: HTMLAudioElement;
+  private readonly unlockListeners = new Set<() => void>();
 
   constructor(store: SettingsStore) {
     this.settings = store.get();
     store.events.on('change', (s) => this.applySettings(s));
+    this.installDomUnlock();
+  }
+
+  /**
+   * Desbloqueio no primeiro gesto do usuário em QUALQUER lugar da página (inclusive dentro dos
+   * modais, que interrompem a propagação dos eventos do Phaser) e retomada do contexto quando a
+   * aba volta ao primeiro plano (o iOS suspende/interrompe o AudioContext ao trocar de app).
+   */
+  private installDomUnlock(): void {
+    if (typeof document === 'undefined') return;
+    const onGesture = () => this.unlock();
+    for (const ev of ['touchend', 'pointerup', 'mouseup', 'keydown']) {
+      document.addEventListener(ev, onGesture, { passive: true, capture: true });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') this.resumeContext();
+    });
+  }
+
+  private resumeContext(): void {
+    try {
+      const ctx = Howler.ctx as (AudioContext & { state: string }) | undefined;
+      if (ctx && ctx.state !== 'running') void ctx.resume();
+    } catch {
+      /* ignore */
+    }
+    if (this.silentTag && this.silentTag.paused) this.silentTag.play().catch(() => undefined);
+  }
+
+  /** Chamado quando o áudio é desbloqueado (uma vez). */
+  onUnlock(listener: () => void): () => void {
+    if (this.unlocked) listener();
+    else this.unlockListeners.add(listener);
+    return () => this.unlockListeners.delete(listener);
   }
 
   /** Cria os Howls e devolve quando tudo carregou (ou quando o tempo limite estourar). */
@@ -58,17 +102,30 @@ export class AudioManager {
     return Promise.race([all, timeout]);
   }
 
-  /** Deve ser chamado a partir de um gesto do usuário (pointerdown). */
+  /** Deve ser chamado a partir de um gesto do usuário (toque/clique/tecla). */
   unlock(): void {
-    if (this.unlocked) return;
+    if (this.unlocked) {
+      this.resumeContext();
+      return;
+    }
     this.unlocked = true;
+    this.resumeContext();
+    // truque do iOS: <audio> silencioso em loop mantém a sessão de áudio em "playback"
     try {
-      const ctx = Howler.ctx;
-      if (ctx && ctx.state === 'suspended') void ctx.resume();
+      if (typeof Audio !== 'undefined' && !this.silentTag) {
+        const tag = new Audio(SILENT_MP3);
+        tag.loop = true;
+        tag.setAttribute('playsinline', '');
+        tag.volume = 0.01;
+        tag.play().catch(() => undefined);
+        this.silentTag = tag;
+      }
     } catch {
       /* ignore */
     }
     if (this.musicRequested) this.playMusic();
+    for (const l of this.unlockListeners) l();
+    this.unlockListeners.clear();
   }
 
   get isUnlocked(): boolean {

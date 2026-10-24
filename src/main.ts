@@ -52,6 +52,8 @@ function bootstrap(): void {
     // panicMax:0 → sem período de aquecimento com delta fixo após o boot/retomada.
     fps: { target: 60, min: 0.5, smoothStep: true, panicMax: 0, forceSetTimeOut: false },
     input: { activePointers: 2, touch: { capture: true } },
+    // o áudio é do Howler (Web Audio); o SoundManager do Phaser não é usado
+    audio: { noAudio: true },
     disableContextMenu: true,
     scene: [BootScene, PreloadScene, LobbyScene, JaguarGoldScene],
     callbacks: {

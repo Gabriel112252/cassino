@@ -263,7 +263,7 @@ export class SettingsModal extends Modal {
     const tut = new TextButton(scene, 170, y + 20, { label: 'REVER TUTORIAL', width: 280, height: 60, variant: 'dark', fontSize: 20, onClick: () => { void this.close(); actions.onShowTutorial(); } });
     this.content.add([reset, tut]);
     y += 70;
-    this.paragraph(left, y + 10, `Versão ${APP_CONFIG.version} · ${APP_CONFIG.demoLabel}. Saldo inicial de ${formatCredits(APP_CONFIG.initialBalance)} créditos fictícios.`, 660, 15, '#d9c8a2');
+    this.paragraph(left, y + 10, `Sem som no celular? O áudio só começa após o primeiro toque na tela. No iPhone, desligue o modo silencioso (chave lateral) ou suba o volume.\nVersão ${APP_CONFIG.version} · ${APP_CONFIG.demoLabel}. Saldo inicial de ${formatCredits(APP_CONFIG.initialBalance)} créditos fictícios.`, 660, 15, '#d9c8a2');
   }
 }
 

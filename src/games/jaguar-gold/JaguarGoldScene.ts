@@ -7,6 +7,7 @@ import { SCENE_KEYS } from '@game/registry';
 import { modeFor } from '@game/responsive';
 import { getServices, type Services } from '@game/services';
 import { APP_CONFIG } from '@config/app.config';
+import { uiStyle } from '@ui/textStyles';
 import { JAGUAR_GOLD_MATH, JAGUAR_GOLD_SYMBOLS } from './math.config';
 import { computeLayout, type Layout } from './layout';
 import { ReelSet, SCHEDULE_NORMAL, SCHEDULE_TURBO } from './reels/ReelSet';
@@ -143,6 +144,7 @@ export class JaguarGoldScene extends Phaser.Scene {
 
     this.mascot.enter();
     this.services.audio.playMusic();
+    this.showSoundHint();
     this.installDevHooks();
     if (!this.services.settings.get().tutorialSeen) {
       this.time.delayedCall(700, () => this.showTutorial());
@@ -439,6 +441,38 @@ export class JaguarGoldScene extends Phaser.Scene {
     }
     if (result.lineWins.length > 1) this.winPresenter.startCycle(result);
     if (!this.services.wallet.canAfford(this.session.bet)) this.time.delayedCall(400, () => this.promptReset());
+  }
+
+  /** Aviso "toque para ativar o som" até o primeiro gesto desbloquear o áudio (exigência dos navegadores móveis). */
+  private showSoundHint(): void {
+    const audio = this.services.audio;
+    if (audio.isUnlocked) return;
+    const s = this.services.settings.get();
+    if (!s.musicEnabled && !s.sfxEnabled) return;
+    const pill = this.add.container(0, 0).setDepth(DEPTH.hud + 2);
+    const label = this.add.text(0, 0, 'TOQUE NA TELA PARA ATIVAR O SOM', uiStyle(26, { color: '#fff3d6', fontStyle: '800' })).setOrigin(0.5);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.55);
+    bg.fillRoundedRect(-label.width / 2 - 22, -label.height / 2 - 10, label.width + 44, label.height + 20, 18);
+    bg.lineStyle(2, 0xffc83a, 0.8);
+    bg.strokeRoundedRect(-label.width / 2 - 22, -label.height / 2 - 10, label.width + 44, label.height + 20, 18);
+    pill.add([bg, label]);
+    const place = () => {
+      const l = this.layoutData;
+      // sobre os rolos: some no primeiro toque, então não atrapalha
+      pill.setPosition(l.center.x, l.center.y);
+    };
+    place();
+    this.scale.on('resize', place);
+    this.tweens.add({ targets: pill, alpha: { from: 1, to: 0.55 }, duration: 800, yoyo: true, repeat: -1 });
+    const off = audio.onUnlock(() => {
+      this.scale.off('resize', place);
+      this.tweens.add({ targets: pill, alpha: 0, scale: 0.8, duration: 300, onComplete: () => pill.destroy() });
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      off();
+      this.scale.off('resize', place);
+    });
   }
 
   private onReelStop(index: number, isLast: boolean): void {
