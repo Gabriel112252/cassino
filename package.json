@@ -1,0 +1,36 @@
+{
+  "name": "cassino",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cassino online DEMONSTRATIVO (créditos fictícios) — Jaguar Gold, caça-níquel HTML5 em Phaser 3",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview --host --port 4173",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "rtp": "vitest run tests/rtp.test.ts --reporter=verbose",
+    "assets:prepare": "python3 tools/prepare_assets.py",
+    "assets:audio": "python3 tools/generate_audio.py",
+    "check:visual": "node tools/visual_check.mjs"
+  },
+  "dependencies": {
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/montserrat": "^5.3.0",
+    "howler": "^2.2.4",
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "@types/node": "^22.20.5",
+    "puppeteer-core": "^24.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

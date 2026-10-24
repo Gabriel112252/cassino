@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "useDefineForClassFields": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@game/*": ["src/game/*"],
+      "@games/*": ["src/games/*"],
+      "@audio/*": ["src/audio/*"],
+      "@wallet/*": ["src/wallet/*"],
+      "@ui/*": ["src/ui/*"],
+      "@config/*": ["src/config/*"]
+    }
+  },
+  "include": ["src", "tests", "vite.config.ts"]
+}

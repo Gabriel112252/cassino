@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-*
+screenshots
+docs
+.git
+.gitignore
+.vscode
+.idea
+*.log
+*.wav
+tools/visual_check.mjs

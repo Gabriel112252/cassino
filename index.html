@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#120a1a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Cassino demonstrativo com créditos fictícios — Jaguar Gold. Sem dinheiro real." />
+    <title>Jaguar Gold — Cassino DEMO (créditos fictícios)</title>
+    <link rel="icon" type="image/png" href="./assets/jaguar-gold/symbols/jaguar.png" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #120a1a;
+        overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #app {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at center, #2a1636 0%, #120a1a 70%);
+      }
+      #app canvas {
+        display: block;
+        image-rendering: auto;
+      }
+      /* Fallback text visible only while Phaser boots or if WebGL is unavailable */
+      #boot-note {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 12px;
+        text-align: center;
+        font: 600 12px/1.4 Montserrat, system-ui, sans-serif;
+        color: rgba(255, 220, 140, 0.75);
+        letter-spacing: 0.08em;
+        pointer-events: none;
+      }
+      #boot-note.hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="boot-note">DEMO — CRÉDITOS FICTÍCIOS · Sem dinheiro real</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
