@@ -110,8 +110,8 @@ export class Modal extends Phaser.GameObjects.Container {
     g.lineBetween(-9, -9, 9, 9);
     g.lineBetween(-9, 9, 9, -9);
     c.add(g);
-    c.setSize(60, 60);
-    c.setInteractive(new Phaser.Geom.Circle(0, 0, 30), Phaser.Geom.Circle.Contains);
+    // sem setSize: a área circular fica centrada na origem do container (ver TextButton)
+    c.setInteractive(new Phaser.Geom.Circle(0, 0, 34), Phaser.Geom.Circle.Contains);
     if (c.input) c.input.cursor = 'pointer';
     c.on('pointerover', () => c.setScale(1.1));
     c.on('pointerout', () => c.setScale(1));

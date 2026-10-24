@@ -137,8 +137,10 @@ export class TextButton extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.add([this.bg, this.text]);
     this.draw(false);
+    // Container com setSize: o teste de clique soma displayOrigin (metade do tamanho), portanto a
+    // área precisa ser (0, 0, w, h) para cobrir exatamente o botão desenhado centrado na origem.
     this.setSize(this.opts.width, this.opts.height);
-    this.setInteractive(new Phaser.Geom.Rectangle(-this.opts.width / 2, -this.opts.height / 2, this.opts.width, this.opts.height), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.opts.width, this.opts.height), Phaser.Geom.Rectangle.Contains);
     if (this.input) this.input.cursor = 'pointer';
     this.on('pointerover', () => this.draw(true));
     this.on('pointerout', () => this.draw(false));
