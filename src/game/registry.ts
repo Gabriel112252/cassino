@@ -16,7 +16,7 @@ export const GAME_REGISTRY: readonly GameEntry[] = [
   {
     id: 'jaguar-gold',
     title: 'Jaguar Gold',
-    subtitle: 'Caça-níquel 3x3 · 5 linhas · Giros grátis com multiplicador até x10',
+    subtitle: 'Caça-níquel 3x3 · 5 linhas · Giros grátis até x10 · Super prêmio (tela cheia ×10) · Ganhe até 2.500× a aposta',
     sceneKey: 'JaguarGoldScene',
     coverTexture: 'jg-logo',
     available: true,

@@ -2,7 +2,7 @@
 
 Cassino online **demonstrativo** (créditos fictícios, sem dinheiro real) com o caça-níquel original
 **Jaguar Gold**: 3 rolos × 3 linhas, 5 linhas de pagamento, Wild, Bônus com giros grátis e
-multiplicador crescente até x10.
+multiplicador crescente até x10, **Super Prêmio** (tela cheia ×10) e prêmio máximo de **2.500× a aposta**.
 
 Construído como um **jogo HTML5 de verdade** em Phaser 3 + TypeScript: rolos contínuos com máscara,
 aceleração, motion blur, paradas escalonadas com impacto elástico, partículas, Big/Mega Win,
@@ -11,9 +11,9 @@ mascote animado, áudio sintetizado próprio e layout responsivo (desktop e celu
 > **DEMO — CRÉDITOS FICTÍCIOS.** Não há dinheiro real, depósitos, saques, PIX, cartão, gateways ou prêmios
 > resgatáveis. Resultados simulados por sorteio local. Não é um jogo regulamentado nem possui RTP certificado.
 
-| Mesa (paisagem) | Big Win | Giros grátis |
+| Mesa (paisagem) | Big Win | Super Prêmio (tela cheia ×10) |
 | --- | --- | --- |
-| ![mesa](docs/screenshots/jaguar-gold-landscape.jpg) | ![big win](docs/screenshots/jaguar-gold-big-win.jpg) | ![giros grátis](docs/screenshots/jaguar-gold-free-spins.jpg) |
+| ![mesa](docs/screenshots/jaguar-gold-landscape.jpg) | ![big win](docs/screenshots/jaguar-gold-big-win.jpg) | ![super prêmio](docs/screenshots/jaguar-gold-super-prize.jpg) |
 
 | Linhas vencedoras | Tabela de pagamentos | Celular (retrato) |
 | --- | --- | --- |
@@ -70,12 +70,20 @@ No Easypanel: *App → Source: GitHub (este repositório) → Build: Dockerfile 
 | Linhas             | 5 — meio, topo, base, diagonal descendente, diagonal ascendente                           |
 | Apostas            | 5, 10, 20, 50, 100 e 200 créditos por giro (aposta por linha = total ÷ 5)                 |
 | Símbolos           | Jaguar, Máscara ancestral, Coroa, Diamante, Sino, Trevo, Manga, Cerejas, Baú, WILD, BÔNUS |
-| Wild               | substitui qualquer símbolo exceto o Bônus; 3 Wilds pagam o prêmio máximo (300× linha)     |
+| Wild               | substitui qualquer símbolo exceto o Bônus (3 Wilds = 200× a aposta por linha)             |
 | Bônus (scatter)    | 3 em qualquer posição: 2× a aposta total + **10 giros grátis**                            |
 | Giros grátis       | multiplicador começa em x2, +1 a cada giro vencedor até **x10**; reaciona com +5 giros    |
-| Big Win / Mega Win | a partir de 10× / 30× a aposta total                                                      |
+| **Super Prêmio**   | **tela cheia** (9 símbolos iguais, wild completa) = prêmio das 5 linhas **×10**; 1 em ~2.600 giros |
+| Prêmio máximo      | **2.500× a aposta** por rodada (tela cheia de jaguares = 1.250× no jogo base, até o teto nos giros grátis) |
+| Patamares          | Big Win ≥ 10× (1 em ~75) · Mega Win ≥ 30× (1 em ~676) · Super ≥ 100× (1 em ~2.750)       |
 | Saldo inicial      | 1.000 créditos fictícios (persistidos em `localStorage`, com botão de reinício)           |
-| RTP teórico        | ≈ 95,7 % (jogo base 82,1 % + bônus) — ver `npm run rtp`; **não certificado**              |
+| RTP teórico        | ≈ 95,5 % (jogo base 82,7 % + bônus), prêmio em ~27 % dos giros — ver `npm run rtp`; **não certificado** |
+
+Expectativa e transparência (como nos slots comerciais): a tela de carregamento anuncia **"GANHE ATÉ 2.500× A APOSTA"**,
+a placa **SUPER PRÊMIO** no HUD mostra o prêmio máximo em créditos para a aposta atual (ex.: 25.000 na aposta de 10),
+e a tela **Pagamentos e chances** lista frequência de prêmio, chance do bônus, da tela cheia e de cada patamar.
+Os números divulgados são constantes em `JAGUAR_GOLD_INFO` e o teste `tests/rtp.test.ts` garante que batem com a
+matemática real (enumeração exata do jogo base + simulação do bônus).
 
 Experiência do jogador: botão GIRAR luminoso (vira PARAR durante o giro), controle de aposta, AUTO 10,
 modo TURBO, painel de créditos com contador animado, último prêmio, histórico de giros, tabela de
@@ -186,7 +194,7 @@ CHROME_PATH=/caminho/para/chrome npm run check:visual
   medalhão com máscara circular e animações por tween para disfarçar a diferença entre quadros.
 - O fundo 1600×900 foi ampliado a partir do pacote; em telas 4K pode perder nitidez.
 - O áudio é sintetizado proceduralmente (sem orquestra real) — funcional e coerente, mas simples.
-- O RTP é apenas teórico/simulado para uma demonstração; o jogo não é regulamentado.
+- O RTP e as chances são teóricos/simulados para uma demonstração; o jogo não é regulamentado.
 - Não existe backend: saldo, histórico e preferências vivem no `localStorage` do navegador.
 
 ## Próximos passos sugeridos

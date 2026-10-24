@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SlotEngine } from '@game/core/SlotEngine';
 import { computeRtpReport } from '@game/core/analysis';
-import { JAGUAR_GOLD_MATH } from '@games/jaguar-gold/math.config';
+import { JAGUAR_GOLD_INFO, JAGUAR_GOLD_MATH } from '@games/jaguar-gold/math.config';
 
 /**
  * Relatório de RTP teórico do Jaguar Gold.
@@ -25,7 +25,9 @@ describe('RTP teórico (demo, não certificado)', () => {
         `RTP jogo base          : ${(b.rtp * 100).toFixed(2)}%`,
         `frequência de prêmio   : ${(b.hitFrequency * 100).toFixed(2)}%`,
         `P(acionar bônus)       : 1 em ${(1 / b.triggerProbability).toFixed(0)} giros`,
-        `maior prêmio base      : ${b.maxWinMultiple.toFixed(1)}x a aposta`,
+        `P(tela cheia ×10)      : 1 em ${(1 / b.fullScreenProbability).toFixed(0)} giros`,
+        `P(big / mega / super)  : 1 em ${(1 / b.tierProbability.big).toFixed(0)} / 1 em ${(1 / b.tierProbability.mega).toFixed(0)} / 1 em ${(1 / b.tierProbability.super).toFixed(0)}`,
+        `maior prêmio base      : ${b.maxWinMultiple.toFixed(1)}x a aposta (teto da rodada: ${JAGUAR_GOLD_MATH.maxWinMultiple}x)`,
         `EV do bônus            : ${f.expectedMultiple.toFixed(2)}x a aposta (média ${f.averageSpins.toFixed(1)} giros, mult. final médio ${f.averageMultiplierAtEnd.toFixed(2)})`,
         `RTP TOTAL              : ${(report.totalRtp * 100).toFixed(2)}%`,
         '',
@@ -44,5 +46,25 @@ describe('RTP teórico (demo, não certificado)', () => {
     expect(report.base.hitFrequency).toBeLessThan(0.4);
     expect(1 / report.base.triggerProbability).toBeGreaterThan(100);
     expect(1 / report.base.triggerProbability).toBeLessThan(400);
+  });
+
+  it('a tela cheia (super prêmio) existe e é rara', () => {
+    expect(report.base.fullScreenProbability).toBeGreaterThan(0);
+    expect(1 / report.base.fullScreenProbability).toBeGreaterThan(1000);
+    expect(1 / report.base.fullScreenProbability).toBeLessThan(10000);
+  });
+
+  it('os números divulgados ao jogador batem com a matemática (tolerância)', () => {
+    const b = report.base;
+    const info = JAGUAR_GOLD_INFO;
+    expect(Math.abs(report.totalRtp * 100 - info.rtpPercent)).toBeLessThan(1.5);
+    expect(Math.abs(b.hitFrequency * 100 - info.hitFrequencyPercent)).toBeLessThan(2);
+    expect(Math.abs(1 / b.triggerProbability - info.bonusOneIn) / info.bonusOneIn).toBeLessThan(0.1);
+    expect(Math.abs(1 / b.fullScreenProbability - info.fullScreenOneIn) / info.fullScreenOneIn).toBeLessThan(0.1);
+    expect(Math.abs(1 / b.tierProbability.super - info.superOneIn) / info.superOneIn).toBeLessThan(0.1);
+    expect(Math.abs(1 / b.tierProbability.big - info.bigOneIn) / info.bigOneIn).toBeLessThan(0.1);
+    expect(Math.abs(1 / b.tierProbability.mega - info.megaOneIn) / info.megaOneIn).toBeLessThan(0.1);
+    expect(b.maxWinMultiple).toBe(info.maxBaseWinMultiple);
+    expect(info.maxWinMultiple).toBe(JAGUAR_GOLD_MATH.maxWinMultiple);
   });
 });

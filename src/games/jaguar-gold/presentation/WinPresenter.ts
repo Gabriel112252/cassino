@@ -90,17 +90,19 @@ export class WinPresenter {
       this.sparks.explode(quick ? 6 : 14, c.x, c.y);
     }
 
-    if (wins.length > 1) this.audio.play('winSmall');
+    if (result.fullScreen) this.audio.play('megaWin', { volume: 0.5 });
+    else if (wins.length > 1) this.audio.play('winSmall');
     else this.audio.play('winLine');
     if (result.totalWin >= result.bet * 3) {
       const c = this.layoutRef.center;
       this.coins.explode(quick ? 10 : 22, c.x, c.y + this.layoutRef.reels[0].height * 0.4);
       this.audio.play('coins', { volume: 0.7 });
     }
-    if (result.tier === 'normal') this.showPopup(result.totalWin, quick);
+    if (result.fullScreen) this.showCallout(`TELA CHEIA  ×${result.fullScreen.multiplier}`, quick);
+    else if (result.tier === 'normal') this.showPopup(result.totalWin, quick);
 
     return new Promise((resolve) => {
-      this.scene.time.delayedCall(quick ? 420 : 1150, resolve);
+      this.scene.time.delayedCall(result.fullScreen ? (quick ? 900 : 1600) : quick ? 420 : 1150, resolve);
     });
   }
 
@@ -220,6 +222,32 @@ export class WinPresenter {
     this.scene.tweens.killTweensOf(this.lineLabel);
     this.lineLabel.setAlpha(0).setScale(0.8);
     this.scene.tweens.add({ targets: this.lineLabel, alpha: 1, scale: 1, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  /** Chamada "TELA CHEIA ×10": texto dourado pulsando no centro dos rolos. */
+  private showCallout(label: string, quick: boolean): void {
+    this.popup?.destroy();
+    const l = this.layoutRef;
+    const c = this.scene.add.container(l.center.x, l.center.y).setDepth(this.lines.depth + 4);
+    const glow = this.scene.add.image(0, 0, 'jg-fx-purple-flare').setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9).setDisplaySize(l.frame.width * 1.1, l.frame.height * 1.1);
+    const text = this.scene.add.text(0, 0, label, titleStyle(Math.round(84 * Math.max(0.7, l.frame.scale)))).setOrigin(0.5);
+    applyGoldGradient(text);
+    c.add([glow, text]);
+    this.popup = c;
+    c.setScale(0.2).setAlpha(0);
+    this.scene.cameras.main.shake(300, 0.006);
+    this.scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: quick ? 220 : 420, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: text, scale: { from: 1, to: 1.08 }, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.scene.tweens.add({
+      targets: c,
+      alpha: 0,
+      delay: quick ? 800 : 1500,
+      duration: 300,
+      onComplete: () => {
+        if (this.popup === c) this.popup = undefined;
+        c.destroy();
+      },
+    });
   }
 
   private showPopup(amount: number, quick: boolean): void {

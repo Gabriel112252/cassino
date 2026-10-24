@@ -61,7 +61,7 @@ export class Hud {
     this.demoLabel = scene.add.image(0, 0, 'jg-demo-label').setDepth(depth);
     scene.tweens.add({ targets: this.demoLabel, alpha: { from: 1, to: 0.8 }, duration: 1400, yoyo: true, repeat: -1 });
 
-    this.plaqueFree = new Plaque(scene, 0, 0, 250, 165, 'GIROS\nGRÁTIS', '—').setDepth(depth);
+    this.plaqueFree = new Plaque(scene, 0, 0, 250, 165, 'SUPER PRÊMIO\nGANHE ATÉ', '—').setDepth(depth);
     this.plaqueMult = new Plaque(scene, 0, 0, 250, 165, 'MULTIPLICADOR\nATÉ x10', 'x1').setDepth(depth);
 
     // botão GIRAR
@@ -167,12 +167,22 @@ export class Hud {
     this.btnPlus.setEnabled(canIncrease);
   }
 
+  private maxWinCents = 0;
+  private freeSpinsActive = false;
+
+  /** Prêmio máximo possível (em centavos) para a aposta atual — exibido na placa "SUPER PRÊMIO". */
+  setMaxWin(cents: number): void {
+    this.maxWinCents = cents;
+    if (!this.freeSpinsActive) this.plaqueFree.setTitle('SUPER PRÊMIO\nGANHE ATÉ').setValue(formatCredits(cents, { decimals: false }));
+  }
+
   setFreeSpins(state: FreeSpinsState): void {
+    this.freeSpinsActive = state.active;
     if (state.active) {
       this.plaqueFree.setTitle('GIROS\nGRÁTIS').setValue(String(state.remaining)).setHighlighted(true);
       this.plaqueMult.setTitle('MULTIPLICADOR').setValue(`x${state.multiplier}`).setHighlighted(true);
     } else {
-      this.plaqueFree.setTitle('GIROS\nGRÁTIS').setValue('—').setHighlighted(false);
+      this.plaqueFree.setTitle('SUPER PRÊMIO\nGANHE ATÉ').setValue(formatCredits(this.maxWinCents, { decimals: false }), false).setHighlighted(false);
       this.plaqueMult.setTitle('MULTIPLICADOR\nATÉ x10').setValue('x1').setHighlighted(false);
     }
   }

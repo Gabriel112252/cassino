@@ -4,9 +4,16 @@ import { CounterText } from '@ui/CounterText';
 import { applyGoldGradient, titleStyle, uiStyle } from '@ui/textStyles';
 import type { AudioManager } from '@audio/AudioManager';
 
+export interface BigWinOptions {
+  /** prêmio bateu no teto da rodada (prêmio máximo) */
+  capped?: boolean;
+  /** veio de uma tela cheia (×10) */
+  fullScreen?: boolean;
+}
+
 /**
- * Tela de BIG WIN / MEGA WIN: escurece o jogo, raios girando, título com "pop", contador rolando
- * com som, chuva de moedas, tremor de câmera. Toque para acelerar; fecha sozinha ao terminar.
+ * Tela de BIG WIN / MEGA WIN / SUPER PRÊMIO: escurece o jogo, raios girando, título com "pop",
+ * contador rolando com som, chuva de moedas, tremor de câmera. Toque para acelerar; fecha sozinha.
  */
 export class BigWinOverlay {
   private active = false;
@@ -21,12 +28,13 @@ export class BigWinOverlay {
     return this.active;
   }
 
-  show(tier: WinTier, amount: number): Promise<void> {
-    if (tier !== 'big' && tier !== 'mega') return Promise.resolve();
+  show(tier: WinTier, amount: number, opts: BigWinOptions = {}): Promise<void> {
+    if (tier !== 'big' && tier !== 'mega' && tier !== 'super') return Promise.resolve();
     this.active = true;
     const scene = this.scene;
     const { width: W, height: H } = scene.scale;
-    const mega = tier === 'mega';
+    const superTier = tier === 'super';
+    const mega = tier === 'mega' || superTier;
     const container = scene.add.container(0, 0).setDepth(this.depth);
     const tweens: Phaser.Tweens.Tween[] = [];
 
@@ -35,9 +43,10 @@ export class BigWinOverlay {
 
     // raios girando atrás do título
     const rays = scene.add.container(W / 2, H * 0.42);
-    for (let i = 0; i < 10; i += 1) {
-      const ray = scene.add.image(0, 0, 'fx-ray').setOrigin(0.5, 0).setBlendMode(Phaser.BlendModes.ADD).setTint(mega ? 0xff9ad8 : 0xffd27a).setAlpha(0.35);
-      ray.setDisplaySize(140, Math.max(W, H) * 0.7).setAngle(i * 36);
+    const rayCount = superTier ? 16 : 10;
+    for (let i = 0; i < rayCount; i += 1) {
+      const ray = scene.add.image(0, 0, 'fx-ray').setOrigin(0.5, 0).setBlendMode(Phaser.BlendModes.ADD).setTint(superTier ? (i % 2 ? 0xffe08a : 0xff9ad8) : mega ? 0xff9ad8 : 0xffd27a).setAlpha(0.35);
+      ray.setDisplaySize(140, Math.max(W, H) * 0.7).setAngle((i * 360) / rayCount);
       rays.add(ray);
     }
     container.add(rays);
@@ -46,9 +55,30 @@ export class BigWinOverlay {
     const flare = scene.add.image(W / 2, H * 0.42, 'jg-fx-golden-flare').setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(900, 900).setAlpha(0.9);
     container.add(flare);
     tweens.push(scene.tweens.add({ targets: flare, scale: '*=1.15', alpha: 0.6, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }));
+    if (superTier) {
+      const purple = scene.add.image(W / 2, H * 0.42, 'jg-fx-purple-flare').setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(W * 0.95, H * 0.95).setAlpha(0.8);
+      container.add(purple);
+      tweens.push(scene.tweens.add({ targets: purple, scale: '*=1.1', alpha: 0.5, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }));
+    }
 
-    const title = scene.add.image(W / 2, H * 0.36, mega ? 'jg-fx-megawin' : 'jg-fx-bigwin');
-    const titleScale = Math.min(1.9, (W * 0.6) / title.width, (H * 0.32) / title.height);
+    // título: placa BIG/MEGA do pacote de artes; SUPER PRÊMIO em texto dourado (com PRÊMIO MÁXIMO no teto)
+    let title: Phaser.GameObjects.Image | Phaser.GameObjects.Container;
+    let titleScale: number;
+    if (superTier) {
+      const t = scene.add.container(W / 2, H * 0.34);
+      const main = scene.add.text(0, 0, opts.capped ? 'PRÊMIO MÁXIMO' : 'SUPER PRÊMIO', titleStyle(Math.round(Math.min(150, W * 0.085)))).setOrigin(0.5);
+      applyGoldGradient(main);
+      const sub = scene.add.text(0, main.height * 0.62, opts.fullScreen ? 'TELA CHEIA  ×10' : 'VITÓRIA LENDÁRIA', uiStyle(Math.round(main.height * 0.3), { color: '#fff3d6', stroke: '#2a1404', strokeThickness: 6, fontStyle: '900' })).setOrigin(0.5);
+      const ring = scene.add.image(0, main.height * 0.1, 'jg-fx-golden-ring').setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(main.width * 1.25, main.width * 1.3).setAlpha(0.7);
+      tweens.push(scene.tweens.add({ targets: ring, angle: 360, duration: 8000, repeat: -1 }));
+      t.add([ring, main, sub]);
+      title = t;
+      titleScale = 1;
+    } else {
+      const img = scene.add.image(W / 2, H * 0.36, mega ? 'jg-fx-megawin' : 'jg-fx-bigwin');
+      titleScale = Math.min(1.9, (W * 0.6) / img.width, (H * 0.32) / img.height);
+      title = img;
+    }
     title.setScale(0);
     container.add(title);
     tweens.push(scene.tweens.add({ targets: title, scale: titleScale, duration: 520, ease: 'Back.easeOut' }));
@@ -72,17 +102,18 @@ export class BigWinOverlay {
       scale: { start: 1.0, end: 0.7 },
       rotate: { min: -200, max: 200 },
       gravityY: 1100,
-      frequency: mega ? 22 : 45,
+      frequency: superTier ? 12 : mega ? 22 : 45,
       emitting: true,
     });
     container.add(coins);
 
     this.audio.duckMusic(0.35);
     this.audio.play(mega ? 'megaWin' : 'bigWin');
+    if (superTier) this.audio.play('bonusEnter', { volume: 0.6 });
     this.audio.play('countLoop');
-    scene.cameras.main.shake(mega ? 700 : 400, mega ? 0.012 : 0.006);
+    scene.cameras.main.shake(superTier ? 1000 : mega ? 700 : 400, superTier ? 0.016 : mega ? 0.012 : 0.006);
 
-    const countMs = mega ? 3400 : 2400;
+    const countMs = superTier ? 4400 : mega ? 3400 : 2400;
     let finished = false;
     let closeTimer: Phaser.Time.TimerEvent | undefined;
     return new Promise<void>((resolve) => {
@@ -110,7 +141,7 @@ export class BigWinOverlay {
         this.audio.play('coins');
         if (finished) return;
         tweens.push(scene.tweens.add({ targets: amountText, scale: { from: 1.25, to: 1 }, duration: 500, ease: 'Elastic.easeOut' }));
-        closeTimer = scene.time.delayedCall(mega ? 2600 : 2000, finish);
+        closeTimer = scene.time.delayedCall(superTier ? 3200 : mega ? 2600 : 2000, finish);
       };
       void counter.animateTo(amount, countMs, 'Sine.easeOut').then(onCounted);
       backdrop.on('pointerup', () => {

@@ -9,6 +9,10 @@ export interface BaseGameStats {
   hitFrequency: number;
   /** probabilidade de acionar os giros grátis */
   triggerProbability: number;
+  /** probabilidade de tela cheia (super prêmio ×N) */
+  fullScreenProbability: number;
+  /** probabilidade de cada patamar de vitória */
+  tierProbability: { big: number; mega: number; super: number };
   /** maior prêmio possível em múltiplos da aposta total */
   maxWinMultiple: number;
 }
@@ -36,6 +40,8 @@ export function computeBaseGameStats(engine: SlotEngine, bet = engine.config.bet
   let sumWin = 0;
   let hits = 0;
   let triggers = 0;
+  let fulls = 0;
+  const tiers = { big: 0, mega: 0, super: 0 };
   let maxWin = 0;
   const stops = new Array<number>(strips.length).fill(0);
 
@@ -45,6 +51,8 @@ export function computeBaseGameStats(engine: SlotEngine, bet = engine.config.bet
       sumWin += r.totalWin;
       if (r.totalWin > 0) hits += 1;
       if (r.triggersFreeSpins) triggers += 1;
+      if (r.fullScreen) fulls += 1;
+      if (r.tier === 'big' || r.tier === 'mega' || r.tier === 'super') tiers[r.tier] += 1;
       if (r.totalWin > maxWin) maxWin = r.totalWin;
       return;
     }
@@ -60,6 +68,8 @@ export function computeBaseGameStats(engine: SlotEngine, bet = engine.config.bet
     rtp: sumWin / total / bet,
     hitFrequency: hits / total,
     triggerProbability: triggers / total,
+    fullScreenProbability: fulls / total,
+    tierProbability: { big: tiers.big / total, mega: tiers.mega / total, super: tiers.super / total },
     maxWinMultiple: maxWin / bet,
   };
 }

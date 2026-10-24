@@ -1,5 +1,5 @@
 import type { Rng } from './rng';
-import { classifyWin, evaluateLines, evaluateScatter, gridFromStops } from './evaluate';
+import { classifyWin, evaluateFullScreen, evaluateLines, evaluateScatter, gridFromStops } from './evaluate';
 import type { SlotMathConfig, SpinResult } from './types';
 
 export interface SpinOptions {
@@ -45,14 +45,22 @@ export class SlotEngine {
     const lineBet = this.lineBetFor(bet);
     const lineWins = evaluateLines(grid, this.config, lineBet, multiplier);
     const scatterWin = evaluateScatter(grid, this.config, bet, multiplier);
-    const totalWin = lineWins.reduce((acc, w) => acc + w.amount, 0) + (scatterWin?.amount ?? 0);
+    const lineTotal = lineWins.reduce((acc, w) => acc + w.amount, 0);
+    const fullScreen = evaluateFullScreen(grid, this.config, lineTotal);
+    const grossWin = lineTotal + (fullScreen?.bonusAmount ?? 0) + (scatterWin?.amount ?? 0);
+    const cap = bet * this.config.maxWinMultiple;
+    const capped = grossWin > cap;
+    const totalWin = capped ? cap : grossWin;
     const triggersFreeSpins = !!scatterWin && scatterWin.count >= this.config.freeSpins.triggerCount;
     return {
       stops: [...stops],
       grid,
       lineWins,
       scatterWin,
+      fullScreen,
       totalWin,
+      grossWin,
+      capped,
       multiplier,
       bet,
       lineBet,
@@ -87,4 +95,6 @@ export function validateConfig(config: SlotMathConfig): void {
     }
   }
   if (config.symbols.filter((s) => s.kind === 'scatter').length > 1) throw new Error('apenas um scatter é suportado');
+  if (!Number.isFinite(config.maxWinMultiple) || config.maxWinMultiple <= 0) throw new Error('maxWinMultiple inválido');
+  if (config.fullScreen && config.fullScreen.multiplier < 1) throw new Error('fullScreen.multiplier inválido');
 }

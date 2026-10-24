@@ -3,7 +3,8 @@ import { JG_IMAGES, JG_SPRITESHEETS } from '@games/jaguar-gold/assets';
 import { SCENE_KEYS } from '@game/registry';
 import { getServices } from '@game/services';
 import { APP_CONFIG } from '@config/app.config';
-import { uiStyle } from '@ui/textStyles';
+import { applyGoldGradient, titleStyle, uiStyle } from '@ui/textStyles';
+import { JAGUAR_GOLD_INFO } from '@games/jaguar-gold/math.config';
 
 /** Tela de carregamento com barra dourada; imagens via Phaser e áudio via Howler em paralelo. */
 export class PreloadScene extends Phaser.Scene {
@@ -26,10 +27,16 @@ export class PreloadScene extends Phaser.Scene {
     const logo = this.add.image(width / 2, height * 0.4, 'jg-logo').setScale(Math.min(1.1, width / 1200));
     this.tweens.add({ targets: logo, scale: logo.scale * 1.04, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
+    // expectativa: prêmio máximo e super prêmio (números verificados em tests/rtp.test.ts)
+    const headline = this.add.text(width / 2, height * 0.53, `GANHE ATÉ ${JAGUAR_GOLD_INFO.maxWinMultiple.toLocaleString('pt-BR')}× A APOSTA`, titleStyle(Math.round(Math.min(64, width * 0.045)))).setOrigin(0.5);
+    applyGoldGradient(headline);
+    this.tweens.add({ targets: headline, scale: 1.04, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.add.text(width / 2, height * 0.53 + headline.height * 0.8, `SUPER PRÊMIO: tela cheia ×10  ·  Giros grátis com multiplicador até x10  ·  Volatilidade ${JAGUAR_GOLD_INFO.volatility}`, uiStyle(20, { color: '#fff3d6', align: 'center', wordWrap: { width: width * 0.85 } })).setOrigin(0.5);
+
     this.bar = this.add.graphics();
-    this.percentText = this.add.text(width / 2, height * 0.64, 'Carregando… 0%', uiStyle(26, { color: '#fff3d6' })).setOrigin(0.5);
-    this.add.text(width / 2, height * 0.72, APP_CONFIG.demoLabel, uiStyle(22, { color: '#ffd978', fontStyle: '800' })).setOrigin(0.5);
-    this.add.text(width / 2, height * 0.76, 'Sem dinheiro real · Sem depósitos · Sem saques', uiStyle(18, { color: '#d9c8a2' })).setOrigin(0.5);
+    this.percentText = this.add.text(width / 2, height * 0.68, 'Carregando… 0%', uiStyle(26, { color: '#fff3d6' })).setOrigin(0.5);
+    this.add.text(width / 2, height * 0.76, APP_CONFIG.demoLabel, uiStyle(22, { color: '#ffd978', fontStyle: '800' })).setOrigin(0.5);
+    this.add.text(width / 2, height * 0.8, 'Sem dinheiro real · Sem depósitos · Sem saques', uiStyle(18, { color: '#d9c8a2' })).setOrigin(0.5);
 
     for (const img of JG_IMAGES) {
       if (!this.textures.exists(img.key)) this.load.image(img.key, img.url);
@@ -75,7 +82,7 @@ export class PreloadScene extends Phaser.Scene {
     const w = Math.min(640, width * 0.7);
     const h = 26;
     const x = width / 2 - w / 2;
-    const y = height * 0.58;
+    const y = height * 0.62;
     const g = this.bar;
     g.clear();
     g.fillStyle(0x000000, 0.6);

@@ -9,15 +9,46 @@ import { Slider } from '@ui/Slider';
 import { applyGoldGradient, numberStyle, uiStyle } from '@ui/textStyles';
 import type { DemoWallet } from '@wallet/DemoWallet';
 import { symbolTexture } from '../assets';
+import { JAGUAR_GOLD_INFO } from '../math.config';
 
 // ---------------------------------------------------------------- Pagamentos / Regras
 
+const fmtOneIn = (n: number) => `1 em ~${n.toLocaleString('pt-BR')}`;
+
 export class PaytableModal extends Modal {
-  constructor(scene: Phaser.Scene, config: SlotMathConfig) {
+  constructor(scene: Phaser.Scene, config: SlotMathConfig, private readonly bet: number) {
     const portrait = scene.scale.height > scene.scale.width;
-    super(scene, { title: 'TABELA DE PAGAMENTOS', width: portrait ? 1000 : 1040, height: portrait ? 1400 : 760 });
+    super(scene, { title: 'PAGAMENTOS E CHANCES', width: portrait ? 1000 : 1040, height: portrait ? 1560 : 760 });
     if (portrait) this.buildPortrait(scene, config);
     else this.buildLandscape(scene, config);
+  }
+
+  /** Bloco "SUPER PRÊMIO": tela cheia ×10, prêmio máximo para a aposta atual e chances. */
+  private superBlock(scene: Phaser.Scene, config: SlotMathConfig, x: number, y: number, width: number, big: boolean): number {
+    const info = JAGUAR_GOLD_INFO;
+    const iconSize = big ? 100 : 72;
+    const icon = scene.add.image(x + iconSize / 2, y + iconSize / 2 + 6, symbolTexture('jaguar')).setDisplaySize(iconSize, iconSize);
+    const ring = scene.add.image(icon.x, icon.y, 'jg-fx-golden-ring').setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(iconSize * 1.6, iconSize * 1.7).setAlpha(0.8);
+    scene.tweens.add({ targets: ring, angle: 360, duration: 9000, repeat: -1 });
+    const t1 = scene.add.text(x + iconSize + 16, y, 'SUPER PRÊMIO — TELA CHEIA', uiStyle(big ? 26 : 20, { color: '#ffd978', fontStyle: '800' }));
+    const mult = config.fullScreen?.multiplier ?? 1;
+    const maxCredits = formatCredits(this.bet * config.maxWinMultiple, { decimals: false });
+    const t2 = scene.add.text(
+      x + iconSize + 16,
+      y + (big ? 36 : 28),
+      `9 símbolos iguais = prêmio das ${config.paylines.length} linhas ×${mult} (${fmtOneIn(info.fullScreenOneIn)} giros)\nPrêmio máximo: ${config.maxWinMultiple.toLocaleString('pt-BR')}× a aposta = ${maxCredits} créditos nesta aposta`,
+      uiStyle(big ? 21 : 16, { color: '#fff3d6', lineSpacing: big ? 6 : 4, wordWrap: { width: width - iconSize - 16 } }),
+    );
+    this.content.add([ring, icon, t1, t2]);
+    return y + Math.max(iconSize + 16, t2.y - y + t2.height + 8);
+  }
+
+  private chancesText(): string {
+    const info = JAGUAR_GOLD_INFO;
+    return [
+      `• Prêmio em ~${info.hitFrequencyPercent}% dos giros · Big Win ${fmtOneIn(info.bigOneIn)} · Mega Win ${fmtOneIn(info.megaOneIn)} · Super (100×+) ${fmtOneIn(info.superOneIn)}`,
+      `• Giros grátis: ${fmtOneIn(info.bonusOneIn)} giros · RTP teórico ${info.rtpPercent.toLocaleString('pt-BR')}% · volatilidade ${info.volatility}`,
+    ].join('\n');
   }
 
   private symbolRows(scene: Phaser.Scene, config: SlotMathConfig, left: number, top: number, colW: number, rowH: number, icon: number, nameSize: number, paySize: number): number {
@@ -68,6 +99,7 @@ export class PaytableModal extends Modal {
     return [
       '• As linhas pagam da esquerda para a direita com símbolos iguais consecutivos.',
       '• Só o maior prêmio de cada linha é pago; linhas diferentes são somadas.',
+      `• TELA CHEIA (9 iguais, wild completa) multiplica o total das linhas por ${config.fullScreen?.multiplier ?? 1}. O prêmio de uma rodada é limitado a ${config.maxWinMultiple.toLocaleString('pt-BR')}× a aposta.`,
       `• GIROS GRÁTIS: multiplicador inicia em x${config.freeSpins.startMultiplier} e sobe +${config.freeSpins.multiplierStep} a cada giro vencedor (até x${config.freeSpins.maxMultiplier}).`,
       `• BIG WIN a partir de ${config.winTiers.big}x a aposta; MEGA WIN a partir de ${config.winTiers.mega}x.`,
       '• Resultados sorteados localmente antes da animação; probabilidades fixas.',
@@ -83,29 +115,34 @@ export class PaytableModal extends Modal {
     this.paragraph(left, bottom + 2, `Prêmios em múltiplos da aposta POR LINHA (aposta total ÷ ${config.paylines.length}). WILD substitui todos os símbolos, exceto o BÔNUS.`, 560, 18, '#d9c8a2');
 
     const rx = left + 610;
+    let y = this.superBlock(scene, config, rx, top - 4, 400, false);
     const scatter = config.symbols.find((s) => s.kind === 'scatter');
     if (scatter) {
-      const icon = scene.add.image(rx + 40, top + 40, symbolTexture(scatter.id)).setDisplaySize(84, 84);
-      const t1 = scene.add.text(rx + 96, top + 6, 'BÔNUS (scatter)', uiStyle(20, { color: '#ffd978', fontStyle: '800' }));
+      const icon = scene.add.image(rx + 36, y + 34, symbolTexture(scatter.id)).setDisplaySize(72, 72);
+      const t1 = scene.add.text(rx + 88, y + 2, 'BÔNUS (scatter)', uiStyle(18, { color: '#ffd978', fontStyle: '800' }));
       const fs = config.freeSpins;
-      const t2 = scene.add.text(rx + 96, top + 34, `${fs.triggerCount} em qualquer posição = ${scatter.pays[3]}x a aposta total\n+ ${fs.spinsAwarded} GIROS GRÁTIS (reaciona: +${fs.retriggerSpins})`, uiStyle(16, { color: '#fff3d6', lineSpacing: 4 }));
+      const t2 = scene.add.text(rx + 88, y + 26, `${fs.triggerCount} em qualquer posição = ${scatter.pays[3]}x a aposta total\n+ ${fs.spinsAwarded} GIROS GRÁTIS (reaciona: +${fs.retriggerSpins})`, uiStyle(15, { color: '#fff3d6', lineSpacing: 3 }));
       this.content.add([icon, t1, t2]);
+      y += 78;
     }
-    const linesTitle = scene.add.text(rx, top + 110, `${config.paylines.length} LINHAS DE PAGAMENTO`, uiStyle(20, { color: '#ffd978', fontStyle: '800' }));
+    const linesTitle = scene.add.text(rx, y, `${config.paylines.length} LINHAS DE PAGAMENTO`, uiStyle(18, { color: '#ffd978', fontStyle: '800' }));
     this.content.add(linesTitle);
-    this.paylineIcons(scene, config, rx, top + 146, 20, 8);
-    this.paragraph(rx, top + 240, this.rulesText(config), 380, 15, '#fff3d6');
+    this.paylineIcons(scene, config, rx, y + 30, 18, 10);
+    y += 30 + 18 * 3 + 8 + 30;
+    const chances = this.paragraph(rx, y, this.chancesText(), 400, 14, '#ffd978');
+    this.paragraph(rx, y + chances.height + 8, this.rulesText(config), 400, 13, '#fff3d6');
   }
 
   private buildPortrait(scene: Phaser.Scene, config: SlotMathConfig): void {
     const W = 1000;
-    const H = 1400;
+    const H = 1560;
     const left = -W / 2 + 36;
-    let y = -H / 2 + 110;
+    let y = -H / 2 + 104;
     const scatter = config.symbols.find((s) => s.kind === 'scatter');
-    y = this.symbolRows(scene, config, left, y, 468, 118, 92, 20, 30);
-    this.paragraph(left, y + 6, `Prêmios em múltiplos da aposta POR LINHA (aposta total ÷ ${config.paylines.length}). WILD substitui todos os símbolos, exceto o BÔNUS.`, W - 72, 22, '#d9c8a2');
-    y += 92;
+    y = this.superBlock(scene, config, left, y, W - 72, true) + 10;
+    y = this.symbolRows(scene, config, left, y, 468, 104, 84, 19, 28);
+    this.paragraph(left, y + 4, `Prêmios em múltiplos da aposta POR LINHA (aposta total ÷ ${config.paylines.length}). WILD substitui todos os símbolos, exceto o BÔNUS.`, W - 72, 20, '#d9c8a2');
+    y += 80;
     if (scatter) {
       const icon = scene.add.image(left + 50, y + 50, symbolTexture(scatter.id)).setDisplaySize(100, 100);
       const t1 = scene.add.text(left + 116, y + 4, 'BÔNUS (scatter)', uiStyle(26, { color: '#ffd978', fontStyle: '800' }));
@@ -119,7 +156,8 @@ export class PaytableModal extends Modal {
     y += 44;
     this.paylineIcons(scene, config, left + 10, y, 34, 50);
     y += 34 * 3 + 8 + 50;
-    this.paragraph(left, y, this.rulesText(config), W - 72, 21, '#fff3d6');
+    const chances = this.paragraph(left, y, this.chancesText(), W - 72, 19, '#ffd978');
+    this.paragraph(left, y + chances.height + 10, this.rulesText(config), W - 72, 19, '#fff3d6');
   }
 }
 

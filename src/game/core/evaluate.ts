@@ -1,4 +1,4 @@
-import type { LineWin, Position, ScatterWin, SlotMathConfig, SymbolDef, WinTier } from './types';
+import type { FullScreenWin, LineWin, Position, ScatterWin, SlotMathConfig, SymbolDef, WinTier } from './types';
 
 /** Indexa os símbolos por id para consultas O(1). */
 export function symbolIndex(config: SlotMathConfig): Map<string, SymbolDef> {
@@ -114,9 +114,38 @@ export function evaluateScatter(
   };
 }
 
+/**
+ * "Tela cheia": as 9 posições mostram o mesmo símbolo (wilds completam; scatter não conta).
+ * Devolve o símbolo e o bônus = total das linhas × (multiplicador − 1).
+ */
+export function evaluateFullScreen(grid: string[][], config: SlotMathConfig, lineTotal: number): FullScreenWin | null {
+  const fs = config.fullScreen;
+  if (!fs || fs.multiplier <= 1 || lineTotal <= 0) return null;
+  const symbols = symbolIndex(config);
+  let symbol: string | null = null;
+  let wilds = 0;
+  for (const column of grid) {
+    for (const id of column) {
+      const def = symbols.get(id);
+      if (!def || def.kind === 'scatter') return null;
+      if (def.kind === 'wild') {
+        wilds += 1;
+        continue;
+      }
+      if (symbol === null) symbol = id;
+      else if (symbol !== id) return null;
+    }
+  }
+  const total = config.reels * config.rows;
+  if (wilds === total) symbol = config.symbols.find((s) => s.kind === 'wild')?.id ?? null;
+  if (symbol === null) return null;
+  return { symbol, multiplier: fs.multiplier, bonusAmount: lineTotal * (fs.multiplier - 1) };
+}
+
 export function classifyWin(totalWin: number, totalBet: number, config: SlotMathConfig): WinTier {
   if (totalWin <= 0) return 'none';
   const ratio = totalWin / totalBet;
+  if (ratio >= config.winTiers.super) return 'super';
   if (ratio >= config.winTiers.mega) return 'mega';
   if (ratio >= config.winTiers.big) return 'big';
   return 'normal';

@@ -43,6 +43,13 @@ export interface WinTiers {
   big: number;
   /** vitória "mega" a partir de X vezes a aposta total */
   mega: number;
+  /** "super prêmio" a partir de X vezes a aposta total */
+  super: number;
+}
+
+export interface FullScreenConfig {
+  /** multiplicador aplicado ao total das linhas quando as 9 posições mostram o mesmo símbolo (wild conta) */
+  multiplier: number;
 }
 
 export interface SlotMathConfig {
@@ -54,6 +61,10 @@ export interface SlotMathConfig {
   /** tiras (strips) de cada rolo; a posição de parada é uniforme sobre a tira */
   reelStrips: readonly (readonly string[])[];
   freeSpins: FreeSpinsConfig;
+  /** "tela cheia": 9 símbolos iguais multiplicam o prêmio das linhas (opcional) */
+  fullScreen?: FullScreenConfig;
+  /** teto do prêmio de uma rodada, em múltiplos da aposta total (prêmio máximo anunciado) */
+  maxWinMultiple: number;
   winTiers: WinTiers;
   /** valores de aposta total permitidos, em centavos */
   betLevels: readonly number[];
@@ -85,7 +96,15 @@ export interface ScatterWin {
   amount: number;
 }
 
-export type WinTier = 'none' | 'normal' | 'big' | 'mega';
+export type WinTier = 'none' | 'normal' | 'big' | 'mega' | 'super';
+
+export interface FullScreenWin {
+  /** símbolo que preencheu a tela (wilds contam como o símbolo) */
+  symbol: string;
+  multiplier: number;
+  /** valor extra creditado além das linhas (linhas × (multiplicador − 1)), em centavos */
+  bonusAmount: number;
+}
 
 export interface SpinResult {
   /** posição de parada de cada rolo na tira */
@@ -94,8 +113,14 @@ export interface SpinResult {
   grid: string[][];
   lineWins: LineWin[];
   scatterWin: ScatterWin | null;
-  /** total em centavos (linhas + scatter), já multiplicado */
+  /** tela cheia (9 iguais), quando ocorre */
+  fullScreen: FullScreenWin | null;
+  /** total em centavos (linhas × tela cheia + scatter), já multiplicado e limitado ao teto */
   totalWin: number;
+  /** total antes do teto (prêmio máximo) */
+  grossWin: number;
+  /** true quando o prêmio bateu no teto (prêmio máximo da rodada) */
+  capped: boolean;
   /** multiplicador aplicado neste giro (1 no jogo base) */
   multiplier: number;
   /** aposta total em centavos usada no giro */

@@ -143,17 +143,27 @@ export class Plaque extends Phaser.GameObjects.Container {
     g.strokePoints(hexPoints(width - 22, height - 22), true);
     this.glow.setDisplaySize(width * 1.8, height * 1.8);
     this.titleText.setFontSize(Math.round(height * 0.15)).setPosition(0, -height * 0.22).setWordWrapWidth(width * 0.8);
-    this.valueText.setFontSize(Math.round(height * 0.36)).setPosition(0, height * 0.14);
+    this.valueText.setPosition(0, height * 0.14);
+    this.fitValue();
     applyGoldGradient(this.valueText);
   }
 
-  setValue(value: string): this {
+  setValue(value: string, animate = true): this {
     if (this.valueText.text !== value) {
       this.valueText.setText(value);
+      this.fitValue();
       applyGoldGradient(this.valueText);
-      this.scene.tweens.add({ targets: this.valueText, scale: { from: 1.3, to: 1 }, duration: 320, ease: 'Back.easeOut' });
+      if (animate) this.scene.tweens.add({ targets: this.valueText, scale: { from: 1.3, to: 1 }, duration: 320, ease: 'Back.easeOut' });
     }
     return this;
+  }
+
+  /** Reduz a fonte do valor quando o texto é largo demais para a placa (ex.: "500.000"). */
+  private fitValue(): void {
+    const base = Math.round(this.plaqueH * 0.36);
+    this.valueText.setFontSize(base);
+    const max = this.plaqueW * 0.78;
+    if (this.valueText.width > max) this.valueText.setFontSize(Math.max(18, Math.floor((base * max) / this.valueText.width)));
   }
 
   setTitle(title: string): this {

@@ -107,7 +107,7 @@ export class JaguarGoldScene extends Phaser.Scene {
         onBetPlus: () => this.changeBet(1),
         onAuto: () => this.toggleAuto(),
         onTurbo: () => this.setTurbo(!this.turbo),
-        onHelp: () => this.openModal(() => new PaytableModal(this, JAGUAR_GOLD_MATH)),
+        onHelp: () => this.openModal(() => new PaytableModal(this, JAGUAR_GOLD_MATH, this.session.bet)),
         onHistory: () => this.openModal(() => new HistoryModal(this, this.services.wallet, () => this.services.wallet.clearHistory())),
         onSound: () => this.toggleSound(),
         onSettings: () => this.openSettings(),
@@ -125,7 +125,10 @@ export class JaguarGoldScene extends Phaser.Scene {
     this.session.events.on('balance', (b) => {
       if (!this.busy) void this.hud.setBalance(b, false);
     });
-    this.session.events.on('bet', (b) => this.hud.setBet(b));
+    this.session.events.on('bet', (b) => {
+      this.hud.setBet(b);
+      this.hud.setMaxWin(b * JAGUAR_GOLD_MATH.maxWinMultiple);
+    });
     this.resizeHandler = () => this.applyLayout();
     this.scale.on('resize', this.resizeHandler);
     this.input.on('pointerdown', () => {
@@ -183,6 +186,7 @@ export class JaguarGoldScene extends Phaser.Scene {
   private syncHud(): void {
     void this.hud.setBalance(this.session.balance, false);
     this.hud.setBet(this.session.bet);
+    this.hud.setMaxWin(this.session.bet * JAGUAR_GOLD_MATH.maxWinMultiple);
     this.hud.setFreeSpins(this.session.freeSpinsState);
     this.updateBetControls();
     const last = this.services.wallet.spins[0];
@@ -374,13 +378,14 @@ export class JaguarGoldScene extends Phaser.Scene {
     this.hud.setSpinning(false);
 
     const total = result.totalWin;
+    const bigTier = result.tier === 'big' || result.tier === 'mega' || result.tier === 'super';
     if (total > 0 || result.triggersFreeSpins) {
-      if (result.tier === 'big' || result.tier === 'mega') this.mascot.celebrate();
+      if (bigTier) this.mascot.celebrate();
       else if (total >= result.bet * 2) this.mascot.roar();
       this.pulseFrame();
       await this.winPresenter.showAll(result, quick || this.autoRemaining > 0 || isFree);
-      if (result.tier === 'big' || result.tier === 'mega') {
-        await this.bigWin.show(result.tier, total);
+      if (bigTier) {
+        await this.bigWin.show(result.tier, total, { capped: result.capped, fullScreen: !!result.fullScreen });
       }
       audio.play('countLoop', { solo: true });
       await Promise.all([this.hud.setLastWin(total), this.hud.setBalance(round.balanceAfterDebit + total)]);
